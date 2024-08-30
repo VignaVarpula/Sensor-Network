@@ -5,11 +5,8 @@ from tkinter import *
 window = Tk()
 window.geometry("1600x800")
 
-# Load the background image using PhotoImage
-# Adjust the path to the image file as needed
 background_image = PhotoImage(file="C:\\Users\\Varpula Vigna\\OneDrive\\Desktop\\WISE Project - Sensor Network\\sensor network.png")
 
-# Create a label with the background image
 background_label = Label(window, image=background_image)
 background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
@@ -18,44 +15,28 @@ font_tuple = ("comic sans ms", 50, "bold")
 label_1.config(font=font_tuple)
 label_1.pack()
 
-def communicating_sensors(sensors, d):
-    def distance(sensor1, sensor2):
-        x1, y1 = sensor1
-        x2, y2 = sensor2
-        return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
+def communicating_sensors(sensors, d, n):
+    communicable_sensors = []
+    for i in range(1, n):
+        set_sensors = set()  
+        for j in range(i + 1, n + 1):
+            x1, y1 = sensors[i]
+            x2, y2 = sensors[j]
+            distance = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
+            if distance <= d:
+                set_sensors.add(i)
+                set_sensors.add(j)
+        communicable_sensors.append(list(set_sensors))
 
-    # Create adjacency list for graph
-    adj_list = {i: set() for i in sensors}
-    for i in sensors:
-        for j in sensors:
-            if i != j and distance(sensors[i], sensors[j]) <= d:
-                adj_list[i].add(j)
-                adj_list[j].add(i)
+    max_size = 0
+    max_sensor = []
+    for i in communicable_sensors:
+        length = len(i)
+        if length > max_size:
+            max_size = length
+            max_sensor = i
 
-    # Find the largest subset where all nodes are directly connected
-    def find_max_clique():
-        max_clique = []
-        nodes = list(adj_list.keys())
-        
-        def is_clique(candidate):
-            return all(v in adj_list[u] for u in candidate for v in candidate if u != v)
-        
-        def backtrack(start, clique):
-            nonlocal max_clique
-            if len(clique) > len(max_clique):
-                max_clique = clique[:]
-            for i in range(start, len(nodes)):
-                node = nodes[i]
-                if all(node in adj_list[member] for member in clique):
-                    clique.append(node)
-                    backtrack(i + 1, clique)
-                    clique.pop()
-        
-        backtrack(0, [])
-        return max_clique
-
-    max_sensor = find_max_clique()
-    return len(max_sensor), max_sensor
+    return max_size, max_sensor
 
 def plot_graph(sensors):
     x_values = [sensor[0] for sensor in sensors.values()]
@@ -95,17 +76,22 @@ def input_window():
             d = float(entry_d.get())
             sensors = {}
             for i in range(1, n + 1):
-                x, y = map(float, entries_sensors[i].get().split())
+                entry_text = entries_sensors[i].get()
+                if entry_text.strip() == "":
+                    continue  
+                x, y = map(float, entry_text.split())
                 sensors[i] = [x, y]
 
-            max_size, max_sensor = communicating_sensors(sensors, d)
+            print(f"Number of sensors: {n}, Distance: {d}, Sensors: {sensors}") 
+
+            max_size, max_sensor = communicating_sensors(sensors, d, n)
             result_label = Label(result_window, text=f"RESULT \n\n Max Size: {max_size}\nMax Sensor: {max_sensor}", bg="lightgreen", font=("arial", 40, "bold"))
             result_label.pack()
 
             exit_button = tk.Button(result_window, text="EXIT", height=1, width=10, font=("arial", 10, "bold"), command=result_window.destroy)
             exit_button.place(x=700, y=400)
-        except ValueError:
-            pass
+        except ValueError as ve:
+            print(f"ValueError: {ve}")  
 
     def graph_window():
         try:
@@ -113,7 +99,10 @@ def input_window():
             d = float(entry_d.get())
             sensors = {}
             for i in range(1, n + 1):
-                x, y = map(float, entries_sensors[i].get().split())
+                entry_text = entries_sensors[i].get()
+                if entry_text.strip() == "":
+                    continue 
+                x, y = map(float, entry_text.split())
                 sensors[i] = [x, y]
 
             plot_graph(sensors)
@@ -151,10 +140,11 @@ def input_window():
     update_button.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
 
     graph_button = tk.Button(root, text="SHOW GRAPH", bg="lightpink", font=("arial", 10, "bold"), command=graph_window)
-    graph_button.grid(row=5, column=0, padx=5, pady=5)
+    graph_button.grid(row=8, column=0, padx=5, pady=5)
 
     result_button = tk.Button(root, text="SHOW RESULT", bg="lightpink", font=("arial", 10, "bold"), command=result_window)
-    result_button.grid(row=5, column=1, padx=5, pady=5)
+    result_button.grid(row=8, column=1, padx=5, pady=5)
+
 
 start_button = tk.Button(window, text="START", font=("arial", 20, "bold"), height=1, width=10, command=input_window)
 start_button.place(x=650, y=600)
